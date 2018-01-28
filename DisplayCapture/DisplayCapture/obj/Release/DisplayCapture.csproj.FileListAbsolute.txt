@@ -1,0 +1,5 @@
+C:\Users\works\Documents\GitHub\DisplayCapture\DisplayCapture\DisplayCapture\bin\Release\DisplayCapture.dll
+C:\Users\works\Documents\GitHub\DisplayCapture\DisplayCapture\DisplayCapture\bin\Release\DisplayCapture.pdb
+C:\Users\works\Documents\GitHub\DisplayCapture\DisplayCapture\DisplayCapture\obj\Release\DisplayCapture.csproj.CoreCompileInputs.cache
+C:\Users\works\Documents\GitHub\DisplayCapture\DisplayCapture\DisplayCapture\obj\Release\DisplayCapture.dll
+C:\Users\works\Documents\GitHub\DisplayCapture\DisplayCapture\DisplayCapture\obj\Release\DisplayCapture.pdb

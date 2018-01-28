@@ -101,6 +101,10 @@ namespace TestWpf
                 Type ex = _exception.GetType();
                 if(ex==typeof(ChangeSizeException))
                     MessageBox.Show("キャプチャしているウィンドウのサイズを変えてはいけません。", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
+                else if (ex == typeof(NullReferenceException))
+                    MessageBox.Show("キャプチャウィンドウが閉じられました。", "エラー");
+                else
+                    MessageBox.Show("不明なエラーが発生しました。", "エラー");
             }
 
         }

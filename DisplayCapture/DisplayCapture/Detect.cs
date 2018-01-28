@@ -11,6 +11,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Data;
 using System.Windows.Input;
+using System.Diagnostics;
 
 
 
@@ -98,14 +99,14 @@ namespace DisplayDetector
 
         private Exception _exception;//例外が発生しているかどうか
 
+        private Stopwatch _sw = new Stopwatch();
+
         #endregion
 
         #region privateメソッド
         //初期化
         void Initialize(PixelFormat pixelFormat)
         {
-            if (_hwnd == null)
-                throw new NullReferenceException();
 
             _defBitmap = DisplayCapt.CaptureWindow(_hwnd);
 
@@ -121,83 +122,99 @@ namespace DisplayDetector
         }
 
         //一定時間ごとにスクショを保存する。
-        async void GetPict()
+        void GetPict()
         {
 
-            await Task.Run(() =>
+
+            BITMAP bitmap = DisplayCapt.CaptureWindow(_hwnd);
+            if (bitmap == null)
             {
-                BITMAP bitmap = DisplayCapt.CaptureWindow(_hwnd);
-                if (bitmap.Width != _defBitmap.Width || bitmap.Height != _defBitmap.Height)
-                {
-                    _exception = new ChangeSizeException();
-                    _isRun = false;
-                    return;
-                }
+                _exception = new InvalidHandleException();
+                _isRun = false;
+                return;
+            }
+
+            if (bitmap.Width != _defBitmap.Width || bitmap.Height != _defBitmap.Height)
+            {
+                _exception = new ChangeSizeException();
+                _isRun = false;
+                return;
+            }
 
 
-                BitmapData bdata = bitmap.Bitmap.LockBits(new Rectangle(0, 0, _defBitmap.Width, _defBitmap.Height), ImageLockMode.ReadOnly, _defBitmap.PixelFormat);
+            BitmapData bdata = bitmap.Bitmap.LockBits(new Rectangle(0, 0, _defBitmap.Width, _defBitmap.Height), ImageLockMode.ReadOnly, _defBitmap.PixelFormat);
 
-                byte[] buf = new byte[_defBitmap.Size];
+            byte[] buf = new byte[_defBitmap.Size];
 
-                Marshal.Copy(bdata.Scan0, buf, 0, _defBitmap.Size);
+            Marshal.Copy(bdata.Scan0, buf, 0, _defBitmap.Size);
 
-                bitmap.Bitmap.UnlockBits(bdata);
+            bitmap.Bitmap.UnlockBits(bdata);
 
-                _pictureBuf.Add(buf);
+            _pictureBuf.Add(buf);
 
-            });
+
 
 
         }
 
         //一定時間ごとに解析
-        async void Detection()
+        void Detection()
         {
             if (_pictureBuf.Count < 21)
                 return;
 
-            await Task.Run(() =>
+
+            byte[][] picts = _pictureBuf.ToArray();
+            int height = _defBitmap.Height;
+            int width = _defBitmap.Width;
+            int pix = _defBitmap.Stride / width;
+            int size = _defBitmap.Size;
+
+            byte[] divpict = new byte[size];
+            byte[] pict1 = picts[1];
+            byte[] pict2 = picts[0];
+
+            //単純に画素の差分を測定
+            for (int i = 0; i < size; i++)
             {
-                byte[][] picts = _pictureBuf.ToArray();
-                int height = _defBitmap.Height;
-                int width = _defBitmap.Width;
-                int pix = _defBitmap.Stride / width;
-                int size = _defBitmap.Size;
+                divpict[i] = (byte)Math.Abs(pict1[i] - pict2[i]);
+            }
 
-                byte[] divpict = new byte[size];
-                byte[] pict1 = picts[1];
-                byte[] pict2 = picts[0];
-
-                //単純に画素の差分を測定
-                for (int i = 0; i < size; i++)
-                {
-                    divpict[i] = (byte)Math.Abs(pict1[i] - pict2[i]);
-                }
-
-                _divs.Add(divpict);
-            });
+            _divs.Add(divpict);
         }
 
         //検出器の起動中のメソッド
         async void Running()
         {
-
-            while (_isRun)
+            await Task.Run(() =>
             {
-                try
-                {
-                    await Task.Delay(25);
-                    GetPict();
 
-                    await Task.Delay(25);
-                    Detection();
-                }
-                catch (Exception e)
+                _sw.Start();
+                long formerTime = 0;
+                while (_isRun)
                 {
-                    _isRun = false;
-                    _exception = e;
+                    try
+                    {
+
+                        GetPict();
+                        Detection();
+
+                        long time;
+                        do
+                        {
+                            time = _sw.ElapsedMilliseconds;
+                        } while (time - formerTime < 50);
+                        formerTime = time;
+
+                    }
+                    catch (Exception e)
+                    {
+                        _isRun = false;
+                        _exception = e;
+                    }
                 }
-            }
+                _sw.Stop();
+            });
         }
 
         #endregion
@@ -268,4 +285,5 @@ namespace DisplayDetector
     {
 
     }
+
 }

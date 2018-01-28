@@ -136,10 +136,11 @@ namespace DisplayDetector
         internal static BITMAP CaptureWindow(IntPtr hWnd)
         {
             //アクティブなウィンドウのデバイスコンテキストを取得
-            IntPtr winDC = GetDC(hWnd);//GetWindowDC(hWnd);
-            //ウィンドウの大きさを取得
+            IntPtr winDC = GetDC(hWnd);
+
+            //クライアント領域の大きさを取得
             RECT winRect = new RECT();
-            //GetWindowRect(hWnd, ref winRect);
+
             GetClientRect(hWnd, ref winRect);
 
 
